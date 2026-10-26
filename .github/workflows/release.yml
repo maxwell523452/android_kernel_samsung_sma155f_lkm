@@ -30,9 +30,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          gh api \
+          gh api --paginate \
             repos/poqdavid/android_kernel_samsung_sma155f/releases \
-            --paginate > upstream.json
+            > upstream.json
 
           release=$(jq -sc '
             add |
@@ -40,17 +40,17 @@ jobs:
               .draft == false and
               .prerelease == false and
               ((.name // "") | test("^stock optimized"; "i")) and
-              any(.assets[]?; .name | endswith(".tar"))
+              any(.assets[]?; (.name | endswith(".tar")))
             )) |
             first // empty
           ' upstream.json)
 
           if [[ -z "$release" ]]; then
-            echo "::error::no upstream release found"
+            echo "::error::no matching upstream release found"
             exit 1
           fi
 
-          tag=$(jq -r '.tag_name' <<< "$release")
+          tag=$(jq -r '.tag_name // empty' <<< "$release")
           url=$(jq -r '
             [.assets[] |
               select(.name | endswith(".tar")) |
@@ -58,7 +58,10 @@ jobs:
             ][0] // empty
           ' <<< "$release")
 
-          [[ -n "$tag" && "$tag" != "null" && -n "$url" ]] || exit 1
+          [[ -n "$tag" && -n "$url" ]] || {
+            echo "::error::missing upstream tag or archive url"
+            exit 1
+          }
 
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "release_tag=ksun-lkm-$tag" >> "$GITHUB_OUTPUT"
@@ -75,9 +78,10 @@ jobs:
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "release already exists"
+            echo "release already exists; skipping patch"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "new upstream release detected"
           fi
 
       - name: download stock boot
@@ -90,6 +94,7 @@ jobs:
           curl -fL --retry 3 --retry-all-errors \
             "$ARCHIVE_URL" -o stock.tar
 
+          tar -tf stock.tar >/dev/null
           mkdir -p extracted
           tar -xf stock.tar -C extracted
 
@@ -105,7 +110,8 @@ jobs:
           cp "${images[0]}" boot.img
           test -s boot.img
 
-      - name: download kernelsu-next
+      - name: download stable kernelsu-next
+        id: ksu
         if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -115,6 +121,14 @@ jobs:
           gh api \
             repos/KernelSU-Next/KernelSU-Next/releases/latest \
             > kernelsu.json
+
+          ksu_tag=$(jq -r '.tag_name // empty' kernelsu.json)
+          ksu_version="${ksu_tag#v}"
+
+          if [[ -z "$ksu_tag" || "$ksu_tag" == "null" ]]; then
+            echo "::error::stable kernelsu-next release not found"
+            exit 1
+          fi
 
           module_url=$(jq -r '
             [.assets[] |
@@ -130,10 +144,39 @@ jobs:
             ][0] // empty
           ' kernelsu.json)
 
+          apk_name=$(jq -r '
+            [.assets[] |
+              select(
+                .name |
+                test("^KernelSU_Next_v[^_]+_[0-9]+-release\\.apk$")
+              ) |
+              .name
+            ][0] // empty
+          ' kernelsu.json)
+
           if [[ -z "$module_url" || -z "$ksud_url" ]]; then
             echo "::error::required kernelsu-next assets not found"
             exit 1
           fi
+
+          if [[ -z "$apk_name" ]]; then
+            echo "::error::cannot determine kernelsu-next build number"
+            exit 1
+          fi
+
+          build=$(sed -E \
+            's/^KernelSU_Next_v[^_]+_([0-9]+)-release\.apk$/\1/' \
+            <<< "$apk_name")
+
+          [[ "$build" =~ ^[0-9]+$ ]] || {
+            echo "::error::invalid kernelsu-next build number"
+            exit 1
+          }
+
+          version="ksu next ${ksu_version} (${build})"
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "selected $version"
 
           curl -fL --retry 3 --retry-all-errors \
             "$module_url" -o kernelsu.ko
@@ -145,7 +188,7 @@ jobs:
           test -s ksud
           chmod +x ksud
 
-      - name: patch boot
+      - name: patch boot image
         if: steps.check.outputs.exists == 'false'
         run: |
           set -euo pipefail
@@ -164,15 +207,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          tar -cf release/android_kernel_samsung_sma155f_lkm.tar \
+          tar -cf \
+            release/android_kernel_samsung_sma155f_lkm.tar \
             -C release boot.img
 
-          cmp \
-            release/boot.img \
-            <(tar -xOf release/android_kernel_samsung_sma155f_lkm.tar boot.img)
+          cmp release/boot.img \
+            <(tar -xOf \
+              release/android_kernel_samsung_sma155f_lkm.tar boot.img)
 
           (
             cd release
+
             sha256sum \
               boot.img \
               android_kernel_samsung_sma155f_lkm.tar \
@@ -181,6 +226,8 @@ jobs:
             sha256sum -c sha256sums.txt
           )
 
+          echo "archive and checksums verified"
+
       - name: publish release
         if: steps.check.outputs.exists == 'false'
         env:
@@ -188,6 +235,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ steps.upstream.outputs.release_tag }}
           UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
+          KSUNEXT_VERSION: ${{ steps.ksu.outputs.version }}
         run: |
           set -euo pipefail
 
@@ -195,28 +243,44 @@ jobs:
           automated kernelsu-next lkm release.
 
           - device: samsung galaxy a15 4g (sm-a155f)
-          - kernel: linux 5.10 / arm64
           - upstream: ${UPSTREAM_TAG}
+          - ${KSUNEXT_VERSION}
+          - module: aarch64_android12-5.10_kernelsu.ko
           - patch method: kernelsu-next lkm
 
-          ### downloads
+          ## downloads
 
           - boot.img: patched boot image
-          - android_kernel_samsung_sma155f_lkm.tar: patched boot archive
-          - sha256sums.txt: checksums for both files
+          - android_kernel_samsung_sma155f_lkm.tar: boot image archive
+          - sha256sums.txt: sha-256 checksums
 
-          ### credits
+          ## credits
 
           - poqdavid: original stock optimized kernel
-          - kernelsu-next: lkm patching tools
+          - kernelsu-next: lkm implementation and patching tools
 
-          verify firmware compatibility before flashing.
+          verify firmware and kernel compatibility before flashing.
           keep a backup of the original boot image.
           EOF
+
+          printf '\n## %s changelog\n\n' \
+            "$KSUNEXT_VERSION" >> notes.md
+
+          jq -r '
+            if (.body // "") == "" then
+              "no changelog provided by the stable release"
+            else
+              .body
+            end
+          ' kernelsu.json >> notes.md
+
+          title=$(printf '%s' "$UPSTREAM_TAG" | tr '[:upper:]' '[:lower:]')
 
           gh release create "$RELEASE_TAG" \
             release/boot.img \
             release/android_kernel_samsung_sma155f_lkm.tar \
             release/sha256sums.txt \
-            --title "stock optimized - ${UPSTREAM_TAG} - kernelsu-next lkm" \
+            --title "stock optimized - ${title} - kernelsu-next lkm" \
             --notes-file notes.md
+
+          echo "release published successfully"
