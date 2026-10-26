@@ -1,0 +1,45 @@
+# downloaded kernel archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# boot images and kernel modules
+boot.img
+boot_patched.img
+init_boot.img
+vendor_boot.img
+*.ko
+
+# extracted and temporary files
+extracted/
+output/
+tmp/
+temp/
+upstream.json
+releases.json
+ksu-release.json
+ksu-version.txt
+sha256sums.txt
+release-notes.md
+
+# build output
+target/
+build/
+dist/
+out/
+
+# local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# editor and operating system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
