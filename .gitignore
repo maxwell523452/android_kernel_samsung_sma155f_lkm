@@ -1,17 +1,17 @@
-# downloaded kernel archives
+# downloaded archives
 *.tar
 *.tar.gz
 *.tgz
 *.zip
 
-# boot images and kernel modules
+# boot images and modules
 boot.img
 boot_patched.img
 init_boot.img
 vendor_boot.img
 *.ko
 
-# extracted and temporary files
+# temporary files
 extracted/
 output/
 tmp/
@@ -29,14 +29,14 @@ build/
 dist/
 out/
 
-# local environment and secrets
+# secrets and local configuration
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# editor and operating system files
+# editor files
 .DS_Store
 Thumbs.db
 .idea/

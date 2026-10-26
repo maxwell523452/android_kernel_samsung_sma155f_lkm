@@ -4,13 +4,13 @@ automated KernelSU-Next LKM boot image patching for the samsung galaxy a15 4g (S
 
 ## features
 
-- automatically checks for new upstream stock optimized releases
-- downloads the upstream kernel archive and extracts `boot.img`
-- patches the boot image using KernelSU-Next LKM
-- validates the generated image and publishes it as a github release
-- includes sha256 checksums for verification
-- skips upstream builds that have already been published
-- runs automatically every six hours
+- checks for new upstream stock optimized releases
+- downloads the upstream archive and extracts `boot.img`
+- patches the image using KernelSU-Next LKM
+- validates the output and publishes a github release
+- provides sha256 checksums
+- skips builds that have already been published
+- checks for updates every six hours
 
 ## device information
 
@@ -23,38 +23,36 @@ automated KernelSU-Next LKM boot image patching for the samsung galaxy a15 4g (S
 
 ## upstream
 
-the original stock optimized kernel and release assets are provided by poqdavid:
-
-- source repository: https://github.com/poqdavid/android_kernel_samsung_sma155f
-- upstream releases: https://github.com/poqdavid/android_kernel_samsung_sma155f/releases
+- source: https://github.com/poqdavid/android_kernel_samsung_sma155f
+- releases: https://github.com/poqdavid/android_kernel_samsung_sma155f/releases
 
 ## how it works
 
-1. github actions checks upstream releases.
-2. the latest matching stock optimized archive is downloaded.
-3. the workflow extracts the original `boot.img`.
-4. KernelSU-Next's LKM patching tool patches the image.
-5. the workflow validates the output and calculates sha256 checksums.
-6. the patched image is packaged and published as a github release.
+1. checks upstream releases.
+2. downloads the stock optimized archive.
+3. extracts the original `boot.img`.
+4. patches the image using KernelSU-Next.
+5. validates the output and calculates checksums.
+6. packages the patched image and publishes a release.
 
-if any required step fails, the workflow stops without publishing a release.
+if a required step fails, the workflow must stop without publishing a release.
 
 ## usage
 
-1. open the [releases](https://github.com/Maxwell523452/android_kernel_samsung_sma155f_lkm/releases) page.
+1. open the [releases page](https://github.com/Maxwell523452/android_kernel_samsung_sma155f_lkm/releases).
 2. download `android_kernel_samsung_sma155f_lkm.tar`.
-3. verify that the build matches your exact firmware version.
-4. keep your original boot image available before flashing.
+3. verify that the image matches your exact firmware.
+4. keep the original boot image for recovery.
 
-flashing an incompatible boot image can prevent the device from booting. use the image at your own risk.
+flashing an incompatible image can prevent the device from booting. use at your own risk.
 
 ## credits
 
 - **poqdavid** — original stock optimized kernel and release assets: https://github.com/poqdavid/android_kernel_samsung_sma155f
 - **KernelSU-Next** — LKM implementation and patching tools: https://github.com/KernelSU-Next/KernelSU-Next
 
-this is an unofficial community project and is not affiliated with or endorsed by the upstream developers.
+this is an unofficial community project and is not affiliated with the upstream developers.
 
 ## license
 
-the upstream kernel and KernelSU-Next components are subject to their respective licenses. consult the original repositories for license terms and corresponding source code.
+the upstream kernel and KernelSU-Next components are subject to their respective licenses. consult the original repositories for license terms and source code.
