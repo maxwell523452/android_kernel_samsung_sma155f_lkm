@@ -1,4 +1,4 @@
-name: kernel release
+name: kernel update
 
 on:
   workflow_dispatch:
@@ -63,6 +63,7 @@ jobs:
           }
 
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release_url=$(jq -r '.html_url' <<< "$release")" >> "$GITHUB_OUTPUT"
           echo "release_tag=ksun-lkm-$tag" >> "$GITHUB_OUTPUT"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
@@ -234,40 +235,27 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ steps.upstream.outputs.release_tag }}
           UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
+          UPSTREAM_URL: ${{ steps.upstream.outputs.release_url }}
           KSUNEXT_VERSION: ${{ steps.ksu.outputs.version }}
         run: |
           set -euo pipefail
 
           cat > notes.md <<EOF
-          automated kernelsu-next lkm release.
+          upstream: ${UPSTREAM_URL}
 
-          - device: samsung galaxy a15 4g (sm-a155f)
-          - upstream: ${UPSTREAM_TAG}
-          - ${KSUNEXT_VERSION}
-          - module: aarch64_android12-5.10_kernelsu.ko
-          - patch method: kernelsu-next lkm
+          ${KSUNEXT_VERSION} | samsung galaxy a15 4g (sm-a155f)
 
-          ## downloads
+          - patched boot.img (kernelsu-next lkm)
+          - sha256: verify with sha256sum -c sha256sums.txt
 
-          - boot.img: patched boot image
-          - android_kernel_samsung_sma155f_lkm.tar: boot image archive
-          - sha256sums.txt: sha-256 checksums
-
-          ## credits
-
-          - poqdavid: original stock optimized kernel
-          - kernelsu-next: lkm implementation and patching tools
-
-          verify firmware and kernel compatibility before flashing.
-          keep a backup of the original boot image.
+          backup your original boot.img before flashing.
           EOF
 
-          printf '\n## %s changelog\n\n' \
-            "$KSUNEXT_VERSION" >> notes.md
+          printf '\n## changelog\n\n' >> notes.md
 
           jq -r '
             if (.body // "") == "" then
-              "no changelog provided by the stable release"
+              "no changelog available."
             else
               .body
             end
@@ -279,7 +267,7 @@ jobs:
             release/boot.img \
             release/android_kernel_samsung_sma155f_lkm.tar \
             release/sha256sums.txt \
-            --title "stock optimized - ${title} - kernelsu-next lkm" \
+            --title "${title} - kernelsu-next lkm" \
             --notes-file notes.md
 
           echo "release published successfully"
