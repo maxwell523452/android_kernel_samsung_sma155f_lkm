@@ -5,21 +5,12 @@ automated KernelSU-Next LKM boot image patching for the samsung galaxy a15 4g (S
 ## features
 
 - checks for new upstream stock optimized releases
-- downloads the upstream archive and extracts `boot.img`
+- downloads the upstream archive and extracts both `boot.img` and `android_kernel_samsung_sma155f_lkm.tar`
 - patches the image using KernelSU-Next LKM
 - validates the output and publishes a github release
 - provides sha256 checksums
 - skips builds that have already been published
-- checks for updates every six hours
-
-## device information
-
-| property | value |
-| --- | --- |
-| device | samsung galaxy a15 4g |
-| model | SM-A155F |
-| kernel series | 5.10 |
-| root method | KernelSU-Next LKM |
+- checks for updates every day
 
 ## upstream
 
@@ -40,7 +31,7 @@ if a required step fails, the workflow must stop without publishing a release.
 ## usage
 
 1. open the [releases page](https://github.com/Maxwell523452/android_kernel_samsung_sma155f_lkm/releases).
-2. download `android_kernel_samsung_sma155f_lkm.tar`.
+2. download `android_kernel_samsung_sma155f_lkm.tar` or `boot.img` .
 3. verify that the image matches your exact firmware.
 4. keep the original boot image for recovery.
 
