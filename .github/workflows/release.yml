@@ -115,17 +115,14 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         run: |
           set -euo pipefail
-          mkdir output
+          mkdir -p release
 
           ./ksud boot-patch-v2 \
             --boot boot.img \
-            --module kernelsu.ko \
-            --out output \
-            --out-name boot.img
+            --output release/boot.img \
+            --module kernelsu.ko
 
-          test -s output/boot.img
-          mkdir release
-          cp output/boot.img release/boot.img
+          test -s release/boot.img
 
           (
             cd release
