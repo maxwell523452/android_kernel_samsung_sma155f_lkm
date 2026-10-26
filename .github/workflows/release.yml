@@ -1,10 +1,9 @@
-
 name: kernel release
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 0 * * *"
 
 permissions:
   contents: write
