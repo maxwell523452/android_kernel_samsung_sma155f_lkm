@@ -1,3 +1,6 @@
+# __THIS PROJECT HAS BEEN INTEGRATED TO THE ORIGINAL REPOSITORY__
+# __https://github.com/poqdavid/android_kernel_samsung_sma155f__
+
 # android_kernel_samsung_sma155f_lkm
 
 automated KernelSU-Next LKM boot image patching for the samsung galaxy a15 4g (SM-A155F).
