@@ -45,7 +45,7 @@ flashing an incompatible image can prevent the device from booting. use at your 
 - **poqdavid** — original stock optimized kernel and release assets: https://github.com/poqdavid/android_kernel_samsung_sma155f
 - **KernelSU-Next** — LKM implementation and patching tools: https://github.com/KernelSU-Next/KernelSU-Next
 
-this is an unofficial community project and is not affiliated with the upstream developers.
+this is an unofficial community project and is not affiliated with the upstream developer(s).
 
 ## license
 
